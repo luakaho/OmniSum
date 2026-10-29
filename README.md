@@ -13,3 +13,18 @@
 1. 克隆项目：
    ```bash
    git clone https://github.com/luakaho/OmniSum.git
+
+2. 配置密钥：
+   复制 config.example.json 为 config.json，或直接在宿主机创建 bilibili_cookie.txt 与 deepseek_key.txt。
+3. 启动服务：
+   ```bash
+   docker compose up -d --build
+   ```
+4. 访问：
+   浏览器打开 http://NAS_IP:8081
+
+开发进度
+
+☑ B站 (Bilibili) 模块（字幕提取、NPU兜底、弹幕、楼中楼、并发切片）
+☐ GitHub 仓库总结模块（开发中...）
+☐ 播客 (小宇宙) 模块

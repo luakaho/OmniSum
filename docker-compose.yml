@@ -1,0 +1,17 @@
+services:
+  ai-summarizer:
+    build: .
+    container_name: ai-summarizer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    volumes:
+      - .:/app/data
+      - ./bilibili_cookie.txt:/app/bilibili_cookie.txt
+      - ./deepseek_key.txt:/app/deepseek_key.txt
+    environment:
+      - TZ=Asia/Shanghai
+      - PORT=8080
+      - NPU_ENDPOINT=http://host.docker.internal:8099
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

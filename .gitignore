@@ -1,0 +1,23 @@
+# 敏感配置文件（绝对不许上传！）
+bilibili_cookie.txt
+deepseek_key.txt
+github_token.txt
+config.json
+
+# 个人数据
+history.json
+report_*.md
+
+# 临时文件与缓存
+tmp/
+*.mp3
+*.m4a
+*.wav
+*.srt
+*.vtt
+*.xml
+
+# 编译产物与备份
+test
+*.bak
+*.final

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>OmniSum</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+:root{--b:#121212;--s:#1E1E1E;--p:#BB86FC;--t:#E1E1E1;--t2:#A0A0A0;--d:#333;--e:#E53935;}
+[data-theme="light"]{--b:#F5F6F8;--s:#FFF;--p:#673AB7;--t:#212121;--t2:#757575;--d:#E0E0E0;}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif;}
+body{background:var(--b);color:var(--t);line-height:1.5;}
+.top{display:flex;align-items:center;height:64px;padding:0 16px;border-bottom:1px solid var(--d);}
+.menu{font-size:24px;cursor:pointer;margin-right:10px;}
+.title{flex:1;font-size:20px;font-weight:bold;}
+.theme-seg {display:flex;background:var(--s);border-radius:20px;border:1px solid var(--d);width:130px;height:32px;position:relative;align-items:center;}
+.theme-glider {position:absolute;left:2px;top:2px;bottom:2px;width:calc((100% - 4px)/3);background:var(--p);border-radius:16px;transition:.3s;z-index:1;}
+.theme-seg-item {flex:1;text-align:center;font-size:12px;cursor:pointer;color:var(--t2);z-index:2;font-weight:bold;}
+.theme-seg-item.active {color:#fff;}
+.drawer{position:fixed;top:0;bottom:0;left:-260px;width:260px;background:var(--s);z-index:20;transition:.3s;padding-top:20px;border-right:1px solid var(--d);}
+.drawer.on{transform:translateX(260px);}
+.item{padding:15px 20px;margin:5px 10px;border-radius:12px;cursor:pointer;color:var(--t2);}
+.item.on{background:rgba(187,134,252,.15);color:var(--p);}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;z-index:15;}
+.ov.on{display:block;}
+.box{padding:16px;max-width:800px;margin:0 auto;}
+.page{display:none;}.page.on{display:block;}
+.inp{width:100%;padding:15px;background:var(--s);border:1px solid var(--d);border-radius:12px;color:var(--t);margin-bottom:12px;outline:none;}
+.btn{background:var(--p);color:#fff;border:none;padding:15px;border-radius:12px;width:100%;cursor:pointer;font-weight:bold;}
+.card{background:var(--s);border:1px solid var(--d);border-radius:16px;overflow:hidden;margin-bottom:16px;cursor:pointer;transform:translateZ(0);}
+.card-img{width:100%;aspect-ratio:16/9;background-size:cover;background-position:center;background-color:var(--d);}
+.info{padding:16px;}
+.badge{display:inline-block;padding:4px 8px;border-radius:6px;font-size:12px;margin-bottom:8px;}
+.detail{position:fixed;inset:0;background:var(--b);z-index:50;overflow-y:auto;transform:translateY(100%);transition:.3s;}
+.detail.on{transform:translateY(0);}
+.d-head{display:flex;padding:16px;border-bottom:1px solid var(--d);position:sticky;top:0;background:var(--b);z-index:10;align-items:center;}
+.back{font-size:24px;cursor:pointer;margin-right:15px;}
+.acts{display:flex;justify-content:flex-end;gap:10px;flex-shrink:0;}
+.abtn{width:36px;height:36px;border-radius:10px;border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.abtn svg{width:20px;height:20px;fill:currentColor;}
+.panel{background:var(--s);padding:16px;border-radius:12px;margin-top:16px;}
+.row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--d);}
+.row:last-child{border:none;padding-bottom:0;}
+.st-done{color:#4CAF50;font-weight:bold;} .st-run{color:var(--p);font-weight:bold;} .st-pend{color:var(--t2);}
+.mod{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:none;align-items:center;justify-content:center;}
+.mod.on{display:flex;}
+.mbox{background:var(--s);padding:24px;border-radius:16px;width:90%;max-width:320px;text-align:center;}
+img[src=""], img:not([src]) { display: none !important; }
+</style>
+</head>
+<body>
+<div class="ov" id="ov" onclick="tgl()"></div>
+<div class="drawer" id="dr">
+    <h2 style="padding:0 20px 20px;color:var(--p);">OmniSum</h2>
+    <div class="item on" onclick="nav('home',this)">首页</div>
+    <div class="item" onclick="nav('tasks',this)">任务队列</div>
+    <div class="item" onclick="nav('cookies',this)">Cookies 配置</div>
+    <div class="item" onclick="nav('about',this)">关于</div>
+</div>
+<div class="top">
+    <div class="menu" onclick="tgl()">☰</div>
+    <div class="title" id="pTitle">首页</div>
+    <div class="theme-seg">
+        <div class="theme-glider" id="themeGlider"></div>
+        <div class="theme-seg-item" onclick="setTheme(0)">自动</div>
+        <div class="theme-seg-item" onclick="setTheme(1)">黑夜</div>
+        <div class="theme-seg-item" onclick="setTheme(2)">白天</div>
+    </div>
+</div>
+<div class="box">
+    <div id="page-home" class="page on">
+        <input id="url" class="inp" placeholder="粘贴视频或文章链接...">
+        <button class="btn" onclick="start()" style="margin-bottom:20px;">开始解析</button>
+        <div style="font-weight:bold;margin-bottom:12px;font-size:16px;">最近解析</div>
+        <div id="homeList"></div>
+    </div>
+    <div id="page-tasks" class="page"><div id="taskList"></div></div>
+    <div id="page-cookies" class="page">
+        <select id="plt" class="inp" onchange="loadCk()"><option value="bilibili">Bilibili</option></select>
+        <textarea id="ck" class="inp" style="height:200px;" placeholder="粘贴 Cookie..."></textarea>
+        <button class="btn" onclick="saveCk()">保存 Cookie</button>
+    </div>
+    <div id="page-about" class="page">
+        <div style="background:var(--s);padding:24px;border-radius:16px;text-align:center;">
+            <h2 style="color:var(--p);">OmniSum</h2>
+            <p style="color:var(--t2);margin-top:10px;">全平台多媒体 AI 总结系统</p>
+        </div>
+    </div>
+</div>
+<div class="detail" id="detail">
+    <div class="d-head">
+        <span class="back" onclick="closeD()">←</span>
+        <span style="font-weight:bold;flex:1;">解析详情</span>
+        <div class="theme-seg" style="transform:scale(0.85);transform-origin:right center;margin-right:-8px;">
+            <div class="theme-glider" id="themeGlider2"></div>
+            <div class="theme-seg-item" onclick="setTheme(0)">自动</div>
+            <div class="theme-seg-item" onclick="setTheme(1)">黑夜</div>
+            <div class="theme-seg-item" onclick="setTheme(2)">白天</div>
+        </div>
+    </div>
+    <div style="padding:20px;max-width:800px;margin:0 auto;width:100%;box-sizing:border-box;">
+        <div style="margin-bottom:16px; width:100%;">
+        <div style="min-width:0;">
+            <div id="dStat" class="badge"></div>
+            <h2 id="dTitle" style="margin:10px 0;font-size:24px;line-height:1.3;word-break:break-word;">加载中...</h2>
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-top: 8px;">
+                <p id="dAuth" style="color:var(--t2);font-size:14px;margin:0;">未知</p>
+                <div class="acts" style="margin:0; gap:8px;">
+                    <button class="abtn" style="background:#7C4DFF;" onclick="retry()"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
+                    <button class="abtn" style="background:var(--e);" onclick="showDel()"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <img id="dImg" style="width:100%;border-radius:12px;display:none;" onerror="this.style.display='none'">
+        <div class="panel" id="dPanel">
+            <!-- 动态渲染的流水线 -->
+        </div>
+        <div id="dRes" style="margin-top:20px;line-height:1.7;font-size:16px;"></div>
+    </div>
+</div>
+<div class="mod" id="mDel">
+    <div class="mbox">
+        <h3 style="margin-bottom:16px;">确认删除？</h3>
+        <label style="display:flex;justify-content:center;gap:8px;font-size:14px;color:var(--t2);"><input type="checkbox" id="chkDel"> 同时删除本地缓存</label>
+        <div style="display:flex;gap:10px;margin-top:24px;">
+            <button class="btn" style="background:var(--d);color:var(--t);" onclick="document.getElementById('mDel').classList.remove('on')">取消</button>
+            <button class="btn" style="background:var(--e);" onclick="doDel()">确定删除</button>
+        </div>
+    </div>
+</div>
+<script>
+let tasks=[],polling=null,cid=null,theme=0;
+let lastRenderHash = "";
+function tgl(){document.getElementById('dr').classList.toggle('on');document.getElementById('ov').classList.toggle('on');}
+function setTheme(v){theme=v;applyTheme();}
+function applyTheme(){
+    const sys=window.matchMedia('(prefers-color-scheme: dark)').matches;
+    let act='dark';
+    if(theme===0){act=sys?'dark':'light';}else if(theme===2){act='light';}
+    document.documentElement.setAttribute('data-theme',act);
+    const gl=document.getElementById('themeGlider'), gl2=document.getElementById('themeGlider2');
+    if(gl)gl.style.transform=`translateX(${theme*100}%)`;
+    if(gl2)gl2.style.transform=`translateX(${theme*100}%)`;
+    document.querySelectorAll('.theme-seg-item').forEach((el)=>{
+        const idx = Array.prototype.indexOf.call(el.parentElement.querySelectorAll('.theme-seg-item'), el);
+        if(idx===theme)el.classList.add('active');else el.classList.remove('active');
+    });
+    localStorage.setItem('os_theme',theme);
+}
+function nav(p,el){
+    document.querySelectorAll('.item').forEach(i=>i.classList.remove('on'));el.classList.add('on');
+    document.querySelectorAll('.page').forEach(pg=>pg.classList.remove('on'));document.getElementById('page-'+p).classList.add('on');
+    const ts={'home':'首页','tasks':'任务队列','cookies':'Cookies','about':'关于'};
+    document.getElementById('pTitle').innerText=ts[p]||'OmniSum';
+    if(p==='cookies')loadCk(); tgl();
+}
+
+// 彻底重写 render，采用 diff 渲染机制
+function render(){
+    try{
+        const hList = document.getElementById('homeList');
+        const tList = document.getElementById('taskList');
+        
+        if(!tasks || tasks.length === 0){
+            if (hList.innerHTML !== '<p style="color:var(--t2);text-align:center;padding:20px;">暂无记录</p>') {
+                hList.innerHTML = '<p style="color:var(--t2);text-align:center;padding:20px;">暂无记录</p>';
+                tList.innerHTML = '<p style="color:var(--t2);text-align:center;padding:20px;">暂无记录</p>';
+            }
+            return;
+        }
+
+        // 如果之前是空状态，先清空
+        if (hList.querySelector('p')) { hList.innerHTML = ''; tList.innerHTML = ''; }
+
+        // 采用"复用 DOM"绝对防闪烁
+        updateDOMList(tasks.slice(0, 3), hList, 'home');
+        updateDOMList(tasks, tList, 'task');
+
+    }catch(e){console.error(e);}
+}
+
+// 绝对不重建 DOM 的渲染函数
+function updateDOMList(taskArr, container, prefix) {
+    // 删除不再存在的卡片
+    let activeIds = new Set(taskArr.map(t => prefix + '-' + t.id));
+    Array.from(container.children).forEach(child => {
+        if (child.id && !activeIds.has(child.id)) child.remove();
+    });
+
+    // 按顺序更新或创建
+    taskArr.forEach((t, index) => {
+        const cardId = prefix + '-' + t.id;
+        let el = document.getElementById(cardId);
+        
+        // 如果不存在，创建骨架
+        if (!el) {
+            el = document.createElement('div');
+            el.className = 'card';
+            el.id = cardId;
+            el.onclick = () => openD(t.id);
+            
+            el.innerHTML = `<div class="card-img"></div>
+                <div class="info">
+                    <div class="badge"></div>
+                    <h3 style="margin-bottom:4px;font-size:16px;"></h3>
+                    <p style="color:var(--t2);font-size:13px;"></p>
+                </div>`;
+            container.appendChild(el);
+        }
+
+        // 每次更新时，只渲染真实的 B 站封面
+        const cardImg = el.querySelector('.card-img');
+        if (t.cover && t.cover.startsWith('http')) {
+            let imgSrc = '/api/proxy?url=' + encodeURIComponent(t.cover);
+            if (cardImg.style.backgroundImage !== `url("${imgSrc}")`) {
+                cardImg.style.backgroundImage = `url("${imgSrc}")`;
+            }
+        } else if (!t.cover) {
+            // 如果确实没封面，保持深色底色，清空背景图
+            cardImg.style.backgroundImage = 'none';
+        }
+
+        // 只有内容变了才改文字
+        let s = t.status==='done'?'已完成':(t.status==='running'?'解析中':'失败');
+        let c = t.status==='done'?'rgba(76,175,80,.15)':(t.status==='running'?'rgba(187,134,252,.15)':'rgba(244,67,54,.15)');
+        let col = t.status==='done'?'#4CAF50':(t.status==='running'?'#BB86FC':'#E53935');
+        
+        const badge = el.querySelector('.badge');
+        if (badge.innerText !== s) {
+            badge.innerText = s;
+            badge.style.background = c;
+            badge.style.color = col;
+        }
+        
+        const newTitle = t.title || (t.status === 'running' ? '正在解析音视频...' : '未获取到标题');
+        const h3 = el.querySelector('h3');
+        if (h3.innerText !== newTitle) h3.innerText = newTitle;
+        
+        const newAuthor = t.author || (t.status === 'running' ? '请稍候' : (t.msg || '点击查看详情'));
+        const p = el.querySelector('p');
+        if (p.innerText !== newAuthor) p.innerText = newAuthor;
+        
+        // 保持顺序
+        if (container.children[index] !== el) {
+            container.insertBefore(el, container.children[index] || null);
+        }
+    });
+}
+
+function openD(id){
+    const t = tasks.find(i => i.id === id);
+    if(!t) { alert('数据已丢失'); return; }
+    cid = id;
+    document.getElementById('dRes').innerHTML = ''; 
+    const img = document.getElementById('dImg');
+    img.removeAttribute('src');
+    img.style.display = 'none';
+    updD();
+    document.getElementById('detail').classList.add('on');
+}
+
+function closeD(){ cid=null; document.getElementById('detail').classList.remove('on'); }
+
+function updD(){
+    if(!cid) return; 
+    const t = tasks.find(i => i.id === cid); 
+    if(!t) return;
+    
+    document.getElementById('dTitle').innerText = t.title || '正在解析音视频...'; 
+    document.getElementById('dAuth').innerText = t.author || '未知';
+    document.getElementById('dStat').innerText = t.status==='done'?'已完成':(t.status==='running'?'解析中':'失败');
+    if (t.status === 'error' && t.msg) document.getElementById('dTitle').innerText = "解析失败: " + t.msg;
+    
+    const img = document.getElementById('dImg');
+    if(t.cover && t.cover !== img.getAttribute('data-cover')) { 
+        img.setAttribute('data-cover', t.cover);
+        img.src = '/api/proxy?url=' + encodeURIComponent(t.cover); 
+        img.style.display = 'block'; 
+    }
+    
+    const p = document.getElementById('dPanel');
+    let html = '';
+    
+    if (t.sourceType === '拉取字幕') {
+        html = `
+            <div class="row"><span>拉取字幕</span><span><span class="st-done">完成</span></span></div>
+            <div class="row"><span>拉取弹幕/评论</span><span><span class="st-done">完成</span></span></div>
+            <div class="row"><span>AI 总结</span><span><span class="st-${t.step4Status || 'pend'}">${t.step4Status==='done'?'完成':(t.step4Status==='running'?'处理中':'-')}</span><span style="color:var(--t2);font-size:12px;margin-left:8px;">${t.step4Time ? '('+t.step4Time+')' : ''}</span></span></div>
+        `;
+    } else {
+        html = `
+            <div class="row"><span>拉取信息</span><span><span class="st-${t.step1Status || 'pend'}">${t.step1Status==='done'?'完成':(t.step1Status==='running'?'处理中':'-')}</span><span style="color:var(--t2);font-size:12px;margin-left:8px;">${t.step1Time ? '('+t.step1Time+')' : ''}</span></span></div>
+            <div class="row"><span>视频转码</span><span><span class="st-${t.step2Status || 'pend'}">${t.step2Status==='done'?'完成':(t.step2Status==='running'?'处理中':'-')}</span><span style="color:var(--t2);font-size:12px;margin-left:8px;">${t.step2Time ? '('+t.step2Time+')' : ''}</span></span></div>
+            <div class="row"><span>音频识别</span><span><span class="st-${t.step3Status || 'pend'}">${t.step3Status==='done'?'完成':(t.step3Status==='running'?'处理中':'-')}</span><span style="color:var(--t2);font-size:12px;margin-left:8px;">${t.step3Time ? '('+t.step3Time+')' : ''}</span></span></div>
+            <div class="row"><span>AI 总结</span><span><span class="st-${t.step4Status || 'pend'}">${t.step4Status==='done'?'完成':(t.step4Status==='running'?'处理中':'-')}</span><span style="color:var(--t2);font-size:12px;margin-left:8px;">${t.step4Time ? '('+t.step4Time+')' : ''}</span></span></div>
+        `;
+    }
+    html += `
+        <div class="row" style="border-top:1px dashed var(--d);margin-top:10px;padding-top:15px;">
+            <span>总耗时</span><span style="font-weight:bold;">${t.costTime || '-'}</span>
+        </div>
+    `;
+    p.innerHTML = html;
+
+    if(t.status === 'done' && t.result) {
+        const resDiv = document.getElementById('dRes');
+        if(resDiv.innerHTML.trim() === '') resDiv.innerHTML = marked.parse(t.result);
+    }
+}
+
+function retry(){const t=tasks.find(i=>i.id===cid);if(!t||!t.url)return alert('旧任务无链接');closeD();document.getElementById('url').value=t.url;start();}
+function showDel(){document.getElementById('chkDel').checked=false;document.getElementById('mDel').classList.add('on');}
+function doDel(){const t=tasks.find(i=>i.id===cid);fetch('/api/delete',{method:'POST',body:JSON.stringify({id:cid,deleteFile:document.getElementById('chkDel').checked,url:t?t.url:''})}).then(()=>{tasks=tasks.filter(i=>i.id!==cid);document.getElementById('mDel').classList.remove('on');closeD();render();});}
+function start(){const u=document.getElementById('url').value;if(!u)return alert('请输入链接');fetch('/api/start',{method:'POST',body:JSON.stringify({url:u})}).then(r=>r.json()).then(d=>{document.getElementById('url').value='';
+        tasks.unshift({
+            id: d.task_id, 
+            status: 'running', 
+            title: d.title || '正在解析音视频...', 
+            author: d.author || '请稍候', 
+            cover: d.cover || '' // 没封面就留空，绝不使用占位图
+        });
+render();if(!polling)poll();});}
+function poll(){polling=setInterval(()=>{let a=tasks.filter(t=>t.status==='running');if(a.length===0){clearInterval(polling);polling=null;return;}a.forEach(t=>fetch('/api/status?id='+t.id).then(r=>r.json()).then(d=>{if(!d.cover) delete d.cover; if(!d.title) delete d.title; Object.assign(t,d);render();if(cid===t.id)updD();}));},1500);}
+function loadCk(){fetch('/api/cookie?platform='+document.getElementById('plt').value).then(r=>r.json()).then(d=>document.getElementById('ck').value=d.cookie||'');}
+function saveCk(){fetch('/api/cookie?platform='+document.getElementById('plt').value,{method:'POST',body:JSON.stringify({cookie:document.getElementById('ck').value})}).then(r=>r.json()).then(d=>alert(d.status==='ok'?'保存成功':'失败'));}
+window.onload=()=>{
+    const st=localStorage.getItem('os_theme'); if(st) theme=parseInt(st); applyTheme();
+    Promise.all([fetch('/api/history').then(r=>r.json()).catch(()=>[]),fetch('/api/tasks').then(r=>r.json()).catch(()=>[])]).then(([h,a])=>{
+        let ids=new Set(a.map(t=>t.id));tasks=[...a];h.forEach(t=>{if(!ids.has(t.id))tasks.push(t);});render();if(tasks.some(t=>t.status==='running'))poll();
+    }).catch(e=>render());
+};
+</script>
+</body>
+</html>
